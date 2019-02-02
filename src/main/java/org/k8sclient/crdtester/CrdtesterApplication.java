@@ -72,6 +72,8 @@ public class CrdtesterApplication implements CommandLineRunner {
 		CustomResource deployedResource = getCustomResourceObject(crd);
 		if(deployedResource!=null && errorOnExisting){
 			throw new Exception("Object "+crdName+"/"+objectName+" already exists");
+		} else{
+			logger.info("Object "+crdName+"/"+objectName+" already exists");
 		}
 
 		if(deployMethod.equalsIgnoreCase("command")){
@@ -109,11 +111,7 @@ public class CrdtesterApplication implements CommandLineRunner {
 
 		File file = resourceLoader.getResource(resourceLocation).getFile();
 
-		NonNamespaceOperation<CustomResourceImpl, CustomResourceImplList, DoneableCustomResourceImpl, Resource<CustomResourceImpl, DoneableCustomResourceImpl>> crdClient = kubernetesClient.customResources(crd, CustomResourceImpl.class, CustomResourceImplList.class, DoneableCustomResourceImpl.class);
-
-		if(namespace!=null && !namespace.equalsIgnoreCase("")){
-			crdClient = ((MixedOperation<CustomResourceImpl, CustomResourceImplList, DoneableCustomResourceImpl, Resource<CustomResourceImpl, DoneableCustomResourceImpl>>) crdClient).inNamespace(namespace);
-		}
+		NonNamespaceOperation<CustomResourceImpl, CustomResourceImplList, DoneableCustomResourceImpl, Resource<CustomResourceImpl, DoneableCustomResourceImpl>> crdClient = createCrdClient(crd);
 
 		CustomResourceImpl resource = crdClient.load(new FileInputStream(file)).get();
 
@@ -123,16 +121,19 @@ public class CrdtesterApplication implements CommandLineRunner {
 		return resource;
 	}
 
-	private CustomResource getCustomResourceObject(CustomResourceDefinition crd) {
-		//would be nice to include the name but this API then unhappy about return type
-		CustomResourceList resourceList = (CustomResourceList)kubernetesClient.customResources(crd, CustomResource.class, CustomResourceList.class, CustomResourceDoneable.class).list();
-		List<CustomResource> resources = resourceList.getItems();
-		for(CustomResource resource:resources){
-			if(resource.getMetadata().getName().equals(objectName)){
-				return resource;
-			}
+	private NonNamespaceOperation<CustomResourceImpl, CustomResourceImplList, DoneableCustomResourceImpl, Resource<CustomResourceImpl, DoneableCustomResourceImpl>> createCrdClient(CustomResourceDefinition crd) {
+		NonNamespaceOperation<CustomResourceImpl, CustomResourceImplList, DoneableCustomResourceImpl, Resource<CustomResourceImpl, DoneableCustomResourceImpl>> crdClient = kubernetesClient.customResources(crd, CustomResourceImpl.class, CustomResourceImplList.class, DoneableCustomResourceImpl.class);
+
+		if(namespace!=null && !namespace.equalsIgnoreCase("")){
+			crdClient = ((MixedOperation<CustomResourceImpl, CustomResourceImplList, DoneableCustomResourceImpl, Resource<CustomResourceImpl, DoneableCustomResourceImpl>>) crdClient).inNamespace(namespace);
 		}
-		return null;
+		return crdClient;
+	}
+
+	private CustomResource getCustomResourceObject(CustomResourceDefinition crd) {
+		CustomResourceImpl customResource = createCrdClient(crd).withName(objectName).get();
+
+		return customResource;
 	}
 
 	private CustomResourceDefinition getCRD() throws Exception {
