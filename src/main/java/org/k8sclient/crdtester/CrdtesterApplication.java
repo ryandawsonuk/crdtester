@@ -3,6 +3,7 @@ package org.k8sclient.crdtester;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Executors;
 
@@ -12,6 +13,8 @@ import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.CustomResourceDoneable;
 import io.fabric8.kubernetes.client.CustomResourceList;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientException;
+import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
@@ -76,14 +79,14 @@ public class CrdtesterApplication implements CommandLineRunner {
 			logger.info("Object "+crdName+"/"+objectName+" already exists");
 		}
 
+		createWatch(crd);
+
 		if(deployMethod.equalsIgnoreCase("command")){
 			loadResourceUsingShellCommand();
 		} else{
 			loadResourceFromFile(crd);
 		}
 
-
-		//watch and delete when found - should we create watch before the apply?
 	}
 
 	private void loadResourceUsingShellCommand() throws Exception{
@@ -131,10 +134,27 @@ public class CrdtesterApplication implements CommandLineRunner {
 	}
 
 	private CustomResource getCustomResourceObject(CustomResourceDefinition crd) {
-		CustomResourceImpl customResource = createCrdClient(crd).withName(objectName).get();
-
-		return customResource;
+		return createCrdClient(crd).withName(objectName).get();
 	}
+
+	private void createWatch(CustomResourceDefinition crd) {
+		kubernetesClient.customResources(crd, CustomResourceImpl.class, CustomResourceImplList.class, DoneableCustomResourceImpl.class).inNamespace(namespace).withName(objectName).watch(new Watcher<CustomResourceImpl>() {
+			@Override
+			public void eventReceived(Action action, CustomResourceImpl resource) {
+				logger.info("==> " + action + " for " + resource);
+				if (resource.getSpec() == null) {
+					logger.error("No Spec for resource " + resource);
+				}
+			}
+
+			@Override
+			public void onClose(KubernetesClientException cause) {
+			}
+		});
+
+
+	}
+
 
 	private CustomResourceDefinition getCRD() throws Exception {
 		CustomResourceDefinition customResourceDefinition = kubernetesClient.customResourceDefinitions().withName(crdName).get();
