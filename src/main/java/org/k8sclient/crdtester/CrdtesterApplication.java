@@ -65,6 +65,9 @@ public class CrdtesterApplication implements CommandLineRunner {
 	@Value("${kubernetes.namespace}")
 	private String namespace;
 
+	@Value("${timeout:500}")
+	private long timeout;
+
 	@Autowired
 	private ResourceLoader resourceLoader;
 
@@ -90,7 +93,7 @@ public class CrdtesterApplication implements CommandLineRunner {
 			logger.info("Object to be created is "+crdName+"/"+objectName+" in namespace "+namespace);
 		}
 
-		createWatch(crd,objectName, deployedResource!=null);
+		Watch watch = createWatch(crd,objectName, deployedResource!=null);
 
 
 		if(deployMethod.equalsIgnoreCase("command")){
@@ -98,6 +101,10 @@ public class CrdtesterApplication implements CommandLineRunner {
 		} else{
 			loadResourceFromFileUsingClient(crd);
 		}
+
+		Thread.sleep(timeout);
+		watch.close();
+		kubernetesClient.close();
 
 	}
 
@@ -163,7 +170,7 @@ public class CrdtesterApplication implements CommandLineRunner {
 		return createCrdClient(crd).withName(objectName).get();
 	}
 
-	private void createWatch(CustomResourceDefinition crd, String customResourceObjectName, boolean objectExistsAlready) {
+	private Watch createWatch(CustomResourceDefinition crd, String customResourceObjectName, boolean objectExistsAlready) {
 		Watchable watchable = kubernetesClient.customResources(crd, CustomResourceImpl.class, CustomResourceImplList.class, DoneableCustomResourceImpl.class).inNamespace(namespace).withResourceVersion("0");
 
 		if(objectExistsAlready){
@@ -171,7 +178,7 @@ public class CrdtesterApplication implements CommandLineRunner {
 			watchable = kubernetesClient.customResources(crd, CustomResourceImpl.class, CustomResourceImplList.class, DoneableCustomResourceImpl.class).inNamespace(namespace).withName(customResourceObjectName);
 		}
 
-		watchable.watch(new Watcher<CustomResourceImpl>() {
+		Watch watch = (Watch)watchable.watch(new Watcher<CustomResourceImpl>() {
 			@Override
 			public void eventReceived(Action action, CustomResourceImpl resource) {
 				logger.info("==> " + action + " for " + resource);
@@ -203,10 +210,11 @@ public class CrdtesterApplication implements CommandLineRunner {
 
 			@Override
 			public void onClose(KubernetesClientException cause) {
+				logger.info("watch closed");
 			}
 		});
 
-
+		return watch;
 	}
 
 
