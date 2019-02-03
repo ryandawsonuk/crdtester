@@ -8,10 +8,12 @@ import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
+import io.fabric8.kubernetes.client.Watch;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
+import io.fabric8.kubernetes.client.dsl.Watchable;
 import io.fabric8.kubernetes.internal.KubernetesDeserializer;
 import org.k8sclient.crdtester.model.CustomResourceImpl;
 import org.k8sclient.crdtester.model.CustomResourceImplList;
@@ -48,8 +50,17 @@ public class CrdtesterApplication implements CommandLineRunner {
 	@Value("${deploy.method}")
 	private String deployMethod;
 
-	@Value("${error.on.existing}")
+	@Value("${delete.command}")
+	private String deleteCommand;
+
+	@Value("${delete.method}")
+	private String deleteMethod;
+
+	@Value("${error-on-existing}")
 	private Boolean errorOnExisting;
+
+	@Value("${delete-resource}")
+	private Boolean deleteResource;
 
 	@Value("${kubernetes.namespace}")
 	private String namespace;
@@ -70,19 +81,23 @@ public class CrdtesterApplication implements CommandLineRunner {
 		KubernetesDeserializer.registerCustomKind(crd.getSpec().getGroup() + "/"+crd.getSpec().getVersion(), crd.getSpec().getNames().getKind(), CustomResourceImpl.class);
 
 		CustomResource deployedResource = getCustomResourceObject(crd);
-		if(deployedResource!=null && errorOnExisting){
-			throw new Exception("Object "+crdName+"/"+objectName+" already exists");
+		if(deployedResource!=null){
+			if(errorOnExisting) {
+				throw new Exception("Object " + crdName + "/" + objectName + " already exists");
+			}
+			logger.info("Object "+crdName+"/"+objectName+" already exists in namespace "+namespace);
 		} else{
-			logger.info("Object "+crdName+"/"+objectName+" already exists");
+			logger.info("Object to be created is "+crdName+"/"+objectName+" in namespace "+namespace);
 		}
+
+		createWatch(crd,objectName, deployedResource!=null);
+
 
 		if(deployMethod.equalsIgnoreCase("command")){
 			loadResourceUsingShellCommand();
 		} else{
-			loadResourceFromFile(crd);
+			loadResourceFromFileUsingClient(crd);
 		}
-
-		createWatch(crd);
 
 	}
 
@@ -94,7 +109,22 @@ public class CrdtesterApplication implements CommandLineRunner {
 
 		logger.info("deploying with "+deployCommand);
 
-		ProcessBuilder pb = new ProcessBuilder(deployCommand.split(" "));
+		executeShellCommand(deployCommand);
+	}
+
+	private void deleteResourceUsingShellCommand() throws Exception{
+
+		if(deleteCommand==null || deleteCommand.equalsIgnoreCase("")){
+			deleteCommand = "kubectl delete "+crdName+" "+objectName;
+		}
+
+		logger.info("deleting with "+deleteCommand);
+
+		executeShellCommand(deleteCommand);
+	}
+
+	private void executeShellCommand(String command) throws Exception {
+		ProcessBuilder pb = new ProcessBuilder(command.split(" "));
 
 		Process process = pb.start();
 		StreamGobbler streamGobbler =
@@ -102,12 +132,11 @@ public class CrdtesterApplication implements CommandLineRunner {
 		Executors.newSingleThreadExecutor().submit(streamGobbler);
 		int exitCode = process.waitFor();
 		if(exitCode != 0){
-			throw new Exception("Failure on running: "+deployCommand);
+			throw new Exception("Failure on running: "+command);
 		}
 	}
 
-
-	private CustomResourceImpl loadResourceFromFile(CustomResourceDefinition crd) throws Exception {
+	private CustomResourceImpl loadResourceFromFileUsingClient(CustomResourceDefinition crd) throws Exception {
 
 		File file = resourceLoader.getResource(resourceLocation).getFile();
 
@@ -134,13 +163,41 @@ public class CrdtesterApplication implements CommandLineRunner {
 		return createCrdClient(crd).withName(objectName).get();
 	}
 
-	private void createWatch(CustomResourceDefinition crd) {
-		kubernetesClient.customResources(crd, CustomResourceImpl.class, CustomResourceImplList.class, DoneableCustomResourceImpl.class).inNamespace(namespace).withName(objectName).watch(new Watcher<CustomResourceImpl>() {
+	private void createWatch(CustomResourceDefinition crd, String customResourceObjectName, boolean objectExistsAlready) {
+		Watchable watchable = kubernetesClient.customResources(crd, CustomResourceImpl.class, CustomResourceImplList.class, DoneableCustomResourceImpl.class).inNamespace(namespace).withResourceVersion("0");
+
+		if(objectExistsAlready){
+			//can just watch this obj rather than looking for it to be created
+			watchable = kubernetesClient.customResources(crd, CustomResourceImpl.class, CustomResourceImplList.class, DoneableCustomResourceImpl.class).inNamespace(namespace).withName(customResourceObjectName);
+		}
+
+		watchable.watch(new Watcher<CustomResourceImpl>() {
 			@Override
 			public void eventReceived(Action action, CustomResourceImpl resource) {
 				logger.info("==> " + action + " for " + resource);
-				if (resource.getSpec() == null) {
-					logger.error("No Spec for resource " + resource);
+
+				if( action.equals(Action.ADDED)|| action.equals(Action.MODIFIED)){
+					if (deleteResource && customResourceObjectName.equalsIgnoreCase(resource.getMetadata().getName())) {
+
+						if (deployMethod.equalsIgnoreCase("command")) {
+							try {
+								deleteResourceUsingShellCommand();
+								logger.info("deleted " + customResourceObjectName);
+							} catch (Exception e) {
+								logger.error("deletion via command failed",
+											 e);
+							}
+						} else {
+							boolean deleted = createCrdClient(crd).delete(resource);
+							if (deleted) {
+								logger.info("deleted " + customResourceObjectName);
+							} else {
+								logger.error("deletion via client failed");
+							}
+						}
+					} else {
+						logger.info("Not deleting object " + resource.getMetadata().getName());
+					}
 				}
 			}
 
