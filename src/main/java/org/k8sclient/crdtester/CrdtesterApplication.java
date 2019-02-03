@@ -2,7 +2,9 @@ package org.k8sclient.crdtester;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.CustomResource;
@@ -65,7 +67,7 @@ public class CrdtesterApplication implements CommandLineRunner {
 	@Value("${kubernetes.namespace}")
 	private String namespace;
 
-	@Value("${timeout:500}")
+	@Value("${timeout:5000}")
 	private long timeout;
 
 	@Autowired
@@ -93,7 +95,9 @@ public class CrdtesterApplication implements CommandLineRunner {
 			logger.info("Object to be created is "+crdName+"/"+objectName+" in namespace "+namespace);
 		}
 
-		Watch watch = createWatch(crd,objectName, deployedResource!=null);
+		CountDownLatch deleteLatch = new CountDownLatch(deleteResource ? 1 : 0);
+		CountDownLatch closeLatch = new CountDownLatch(1);
+		Watch watch = createWatch(crd,objectName, deployedResource!=null, deleteLatch, closeLatch);
 
 
 		if(deployMethod.equalsIgnoreCase("command")){
@@ -102,10 +106,20 @@ public class CrdtesterApplication implements CommandLineRunner {
 			loadResourceFromFileUsingClient(crd);
 		}
 
-		Thread.sleep(timeout);
+		waitForLatch(deleteLatch,"Failed to watch for and delete "+objectName);
 		watch.close();
+		waitForLatch(closeLatch,"Failure in watch");
 		kubernetesClient.close();
 
+	}
+
+	private void waitForLatch(CountDownLatch deleteLatch, String message) {
+		try {
+			deleteLatch.await(timeout,
+							  TimeUnit.MILLISECONDS);
+		}catch (KubernetesClientException | InterruptedException e) {
+			logger.error(message, e);
+		}
 	}
 
 	private void loadResourceUsingShellCommand() throws Exception{
@@ -133,10 +147,7 @@ public class CrdtesterApplication implements CommandLineRunner {
 	private void executeShellCommand(String command) throws Exception {
 		ProcessBuilder pb = new ProcessBuilder(command.split(" "));
 
-		Process process = pb.start();
-		StreamGobbler streamGobbler =
-				new StreamGobbler(process.getInputStream(), System.out::println);
-		Executors.newSingleThreadExecutor().submit(streamGobbler);
+		Process process = pb.inheritIO().start();
 		int exitCode = process.waitFor();
 		if(exitCode != 0){
 			throw new Exception("Failure on running: "+command);
@@ -170,7 +181,7 @@ public class CrdtesterApplication implements CommandLineRunner {
 		return createCrdClient(crd).withName(objectName).get();
 	}
 
-	private Watch createWatch(CustomResourceDefinition crd, String customResourceObjectName, boolean objectExistsAlready) {
+	private Watch createWatch(CustomResourceDefinition crd, String customResourceObjectName, boolean objectExistsAlready, CountDownLatch deleteLatch, CountDownLatch closeLatch) {
 		Watchable watchable = kubernetesClient.customResources(crd, CustomResourceImpl.class, CustomResourceImplList.class, DoneableCustomResourceImpl.class).inNamespace(namespace).withResourceVersion("0");
 
 		if(objectExistsAlready){
@@ -184,26 +195,31 @@ public class CrdtesterApplication implements CommandLineRunner {
 				logger.info("==> " + action + " for " + resource);
 
 				if( action.equals(Action.ADDED)|| action.equals(Action.MODIFIED)){
-					if (deleteResource && customResourceObjectName.equalsIgnoreCase(resource.getMetadata().getName())) {
+					if (deleteResource && deleteLatch.getCount()!=0 ) {
 
-						if (deployMethod.equalsIgnoreCase("command")) {
-							try {
-								deleteResourceUsingShellCommand();
-								logger.info("deleted " + customResourceObjectName);
-							} catch (Exception e) {
-								logger.error("deletion via command failed",
-											 e);
+						if(customResourceObjectName.equalsIgnoreCase(resource.getMetadata().getName())) {
+
+							if (deployMethod.equalsIgnoreCase("command")) {
+								try {
+									deleteResourceUsingShellCommand();
+									logger.info("deleted " + customResourceObjectName);
+									deleteLatch.countDown();
+								} catch (Exception e) {
+									logger.error("deletion via command failed",
+												 e);
+								}
+							} else {
+								boolean deleted = createCrdClient(crd).delete(resource);
+								if (deleted) {
+									logger.info("deleted " + customResourceObjectName);
+									deleteLatch.countDown();
+								} else {
+									logger.error("delete via client failed");
+								}
 							}
 						} else {
-							boolean deleted = createCrdClient(crd).delete(resource);
-							if (deleted) {
-								logger.info("deleted " + customResourceObjectName);
-							} else {
-								logger.error("deletion via client failed");
-							}
+							logger.info("Not deleting object " + resource.getMetadata().getName());
 						}
-					} else {
-						logger.info("Not deleting object " + resource.getMetadata().getName());
 					}
 				}
 			}
@@ -211,6 +227,7 @@ public class CrdtesterApplication implements CommandLineRunner {
 			@Override
 			public void onClose(KubernetesClientException cause) {
 				logger.info("watch closed");
+				closeLatch.countDown();
 			}
 		});
 
