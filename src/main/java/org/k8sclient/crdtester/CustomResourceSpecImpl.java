@@ -21,12 +21,17 @@ import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
 
 /**
+ * General purpose custom resource spec
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonPropertyOrder({"apiVersion", "kind", "metadata", "spec", "status"})
 @JsonDeserialize(
         using = JsonDeserializer.None.class
 )

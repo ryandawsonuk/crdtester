@@ -20,10 +20,15 @@ import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.fabric8.kubernetes.client.CustomResource;
 
 /**
+ * General purpose custom resource
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonPropertyOrder({"apiVersion", "kind", "metadata", "spec", "status"})
 public class CustomResourceImpl extends CustomResource {
   private CustomResourceSpecImpl spec;
 
