@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class ShellCommandService {
 
-    public void executeShellCommand(String command) throws Exception {
+    public int executeShellCommand(String command) throws Exception {
         ProcessBuilder pb = new ProcessBuilder(command.split(" "));
 
         Process process = pb.inheritIO().start();
@@ -13,5 +13,6 @@ public class ShellCommandService {
         if(exitCode != 0){
             throw new Exception("Failure on running: "+command);
         }
+        return exitCode;
     }
 }

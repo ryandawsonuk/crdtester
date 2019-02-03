@@ -1,16 +1,18 @@
 # CRD Tester
 
-This is a general-purpose tool for testing the use of a CRD. It checks for a CRD and then deploys a custom resource of that type and deletes it. It is parameterised to allow for different CRDs and can delegate to shell actions to allow for deployment methods (by default it uses fabric8 kubernetes client).
+This is a general-purpose tool for testing the use of a CRD. It checks for a CRD and then deploys a custom resource of that type and deletes it. If it hits an issue (e.g. due to a faulty resource file) then it reports failure. 
+
+The tool is parameterised to allow for different CRDs. By default it uses fabric8 kubernetes client but it can be set to delegate the deploy and delete to shell actions to allow for other deployment methods (e.g. kubectl/helm).
 
 ## Pre-requisites
 
 Maven should be installed. 
 
-A cluster with a CRD installed should be available. 
+A cluster with a CRD installed should be accessible ([kube config file can be used](https://github.com/fabric8io/kubernetes-client/blob/master/README.md#configuring-the-client)). 
 
 # How to Run with Default Configuration
 
-To use the default configuration install the CRD from the initial steps in https://github.com/SeldonIO/seldon-core/blob/master/notebooks/helm_examples.ipynb
+To use the default configuration install the CRD from the initial steps in [this guide](https://github.com/SeldonIO/seldon-core/blob/master/notebooks/helm_examples.ipynb)
 
 Then run with `mvn spring-boot:run`
 
