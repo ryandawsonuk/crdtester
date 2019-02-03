@@ -79,13 +79,13 @@ public class CrdtesterApplication implements CommandLineRunner {
 			logger.info("Object "+crdName+"/"+objectName+" already exists");
 		}
 
-		createWatch(crd);
-
 		if(deployMethod.equalsIgnoreCase("command")){
 			loadResourceUsingShellCommand();
 		} else{
 			loadResourceFromFile(crd);
 		}
+
+		createWatch(crd);
 
 	}
 

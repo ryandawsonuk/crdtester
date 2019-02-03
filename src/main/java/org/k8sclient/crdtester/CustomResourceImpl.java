@@ -27,16 +27,16 @@ import io.fabric8.kubernetes.client.CustomResource;
 public class CustomResourceImpl extends CustomResource {
   private CustomResourceSpecImpl spec;
 
-  Map<String, String> unknownFields = new HashMap<>();
+  Map<String, Object> unknownFields = new HashMap<>();
 
   // Capture all other fields that Jackson do not match other members
   @JsonAnyGetter
-  public Map<String, String> otherFields() {
+  public Map<String, Object> otherFields() {
     return unknownFields;
   }
 
   @JsonAnySetter
-  public void setOtherField(String name, String value) {
+  public void setOtherField(String name, Object value) {
     unknownFields.put(name, value);
   }
 
