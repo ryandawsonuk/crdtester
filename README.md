@@ -1,6 +1,6 @@
 # CRD Tester
 
-This is a general-purpose CRD testing tool. It checks for a CRD and then deploys a custom resource of that type and deletes it. It is parameterised to allow for different CRDs and deployment methods.
+This is a general-purpose tool for testing the use of a CRD. It checks for a CRD and then deploys a custom resource of that type and deletes it. It is parameterised to allow for different CRDs and can delegate to shell actions to allow for deployment methods (by default it uses fabric8 kubernetes client).
 
 ## Pre-requisites
 
