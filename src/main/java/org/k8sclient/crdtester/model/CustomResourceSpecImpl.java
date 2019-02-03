@@ -13,24 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.k8sclient.crdtester;
+package org.k8sclient.crdtester.model;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import io.fabric8.kubernetes.client.CustomResource;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.fabric8.kubernetes.api.model.KubernetesResource;
 
 /**
- * General purpose custom resource
+ * General purpose custom resource spec
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({"apiVersion", "kind", "metadata", "spec", "status"})
-public class CustomResourceImpl extends CustomResource {
-  private CustomResourceSpecImpl spec;
+@JsonDeserialize(
+        using = JsonDeserializer.None.class
+)
+public class CustomResourceSpecImpl implements KubernetesResource {
 
   Map<String, Object> unknownFields = new HashMap<>();
 
@@ -45,11 +50,4 @@ public class CustomResourceImpl extends CustomResource {
     unknownFields.put(name, value);
   }
 
-  public CustomResourceSpecImpl getSpec() {
-    return spec;
-  }
-
-  public void setSpec(CustomResourceSpecImpl spec) {
-    this.spec = spec;
-  }
 }

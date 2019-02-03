@@ -2,16 +2,10 @@ package org.k8sclient.crdtester;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.List;
 import java.util.concurrent.Executors;
 
-import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.CustomResource;
-import io.fabric8.kubernetes.client.CustomResourceDoneable;
-import io.fabric8.kubernetes.client.CustomResourceList;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.Watcher;
@@ -19,6 +13,9 @@ import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.internal.KubernetesDeserializer;
+import org.k8sclient.crdtester.model.CustomResourceImpl;
+import org.k8sclient.crdtester.model.CustomResourceImplList;
+import org.k8sclient.crdtester.model.DoneableCustomResourceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
@@ -69,7 +66,7 @@ public class CrdtesterApplication implements CommandLineRunner {
 
 		CustomResourceDefinition crd = getCRD();
 
-		//seems fabric8 needs custom type to handle crds - have commented on https://github.com/fabric8io/fabric8-maven-plugin/issues/1377
+		//have commented on https://github.com/fabric8io/fabric8-maven-plugin/issues/1377 as this approach could be used to fix that
 		KubernetesDeserializer.registerCustomKind(crd.getSpec().getGroup() + "/"+crd.getSpec().getVersion(), crd.getSpec().getNames().getKind(), CustomResourceImpl.class);
 
 		CustomResource deployedResource = getCustomResourceObject(crd);
