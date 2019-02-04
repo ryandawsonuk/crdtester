@@ -24,6 +24,8 @@ Parameters can be overriden from application.properties file (in src/main/resour
 
 The tool expects a CRD of name `crd.name` in the cluster. It will attempt to deploy a resource file containing a resource of type `crd.name` and file to be specified in `deploy.resource.location`.
 
+As an overriding example an application-helm.properties config file is provided. To use this run with `./mvnw spring-boot:run -Dspring.profiles.active=helm`
+
 ## Troubleshooting
 
 A `ConnectException: Failed to connect` means no kubernetes cluster is configured or the cluster is unreachable. See fabric8 kubernetes client docs.
