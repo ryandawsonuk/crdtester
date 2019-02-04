@@ -8,17 +8,15 @@ For deploy and delete commands by default the tool uses fabric8 kubernetes clien
 
 ## Pre-requisites
 
-Maven should be installed. 
-
 A cluster with a CRD installed should be accessible ([kube config file can be used](https://github.com/fabric8io/kubernetes-client/blob/master/README.md#configuring-the-client)). 
 
 ## How to Run with Default Configuration
 
 To use the default configuration install the CRD from the initial steps in [this guide](https://github.com/SeldonIO/seldon-core/blob/master/notebooks/helm_examples.ipynb)
 
-Then run with `mvn spring-boot:run`
+Clone this repository and run with `./mvnw spring-boot:run` (or `./mvnw.cmd spring-boot:run` on windows)
 
-If successful then near the end of the output you will see logging including `deleted mymodel` and `watch closed`
+If successful then near the end of the output you will see logging including `deleted mymodel` and `watch closed`. The tool should fail if unsuccessful.
 
 ## Using Custom Configuration
 
