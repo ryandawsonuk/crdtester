@@ -48,7 +48,7 @@ public class WatcherService {
     }
 
 
-    public Watch createWatch(CustomResourceDefinition crd, String customResourceObjectName, boolean objectExistsAlready, CountDownLatch deleteLatch, CountDownLatch closeLatch) {
+    public Watch createWatch(CustomResourceDefinition crd, String customResourceObjectName, boolean objectExistsAlready, CountDownLatch deleteLatch, CountDownLatch closeLatch) throws InterruptedException {
         Watchable watchable = kubernetesClient.customResources(crd, CustomResourceImpl.class, CustomResourceImplList.class, DoneableCustomResourceImpl.class).inNamespace(namespace).withResourceVersion("0");
 
         if(objectExistsAlready){

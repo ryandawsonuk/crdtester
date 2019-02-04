@@ -1,8 +1,5 @@
 package org.k8sclient.crdtester.services;
 
-import java.io.File;
-import java.io.FileInputStream;
-
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
@@ -49,11 +46,9 @@ public class DeployService {
 
     private CustomResourceImpl loadResourceFromFileUsingClient(CustomResourceDefinition crd) throws Exception {
 
-        File file = resourceLoader.getResource(resourceLocation).getFile();
-
         NonNamespaceOperation<CustomResourceImpl, CustomResourceImplList, DoneableCustomResourceImpl, Resource<CustomResourceImpl, DoneableCustomResourceImpl>> crdClient = kubernetesClientService.createCrdClient(crd);
 
-        CustomResourceImpl resource = crdClient.load(new FileInputStream(file)).get();
+        CustomResourceImpl resource = crdClient.load(resourceLoader.getResource(resourceLocation).getInputStream()).get();
 
         crdClient.createOrReplace(resource);
         logger.info("create or replace performed on "+resource);
@@ -64,7 +59,11 @@ public class DeployService {
     private void loadResourceUsingShellCommand() throws Exception{
 
         if(deployCommand==null || deployCommand.equalsIgnoreCase("")){
-            deployCommand = "kubectl create -f "+resourceLoader.getResource(resourceLocation).getFile().getAbsoluteFile();
+            if(resourceLoader.getResource(resourceLocation).isFile()) {
+                deployCommand = "kubectl create -f " +resourceLoader.getResource(resourceLocation).getFile().getAbsoluteFile();
+            } else{
+                deployCommand = "kubectl create -f " +resourceLoader.getResource(resourceLocation).getURL();
+            }
         }
 
         logger.info("deploying with "+deployCommand);

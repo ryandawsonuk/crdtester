@@ -27,3 +27,5 @@ The tool expects a CRD of name `crd.name` in the cluster. It will attempt to dep
 ## Troubleshooting
 
 A `ConnectException: Failed to connect` means no kubernetes cluster is configured or the cluster is unreachable. See fabric8 kubernetes client docs.
+
+If delegating to shell commands and seeing resource created but not deleted, be careful about which namespace your kube context is pointed at.
