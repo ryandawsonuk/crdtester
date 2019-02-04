@@ -1,6 +1,8 @@
 package org.k8sclient.crdtester;
 
 import java.util.concurrent.CountDownLatch;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -17,6 +19,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.expression.Expression;
+import org.springframework.expression.ExpressionParser;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 
 @SpringBootApplication
 public class CrdtesterApplication implements CommandLineRunner {
@@ -63,7 +69,8 @@ public class CrdtesterApplication implements CommandLineRunner {
 		//have commented on https://github.com/fabric8io/fabric8-maven-plugin/issues/1377 as this approach could be used to fix that
 		KubernetesDeserializer.registerCustomKind(crd.getSpec().getGroup() + "/"+crd.getSpec().getVersion(), crd.getSpec().getNames().getKind(), CustomResourceImpl.class);
 
-		CustomResource deployedResource = getCustomResourceObject(crd);
+		CustomResourceImpl deployedResource = getCustomResourceObject(crd);
+
 		if(deployedResource!=null){
 			if(errorOnExisting) {
 				throw new Exception("Object " + crdName + "/" + objectName + " already exists");
@@ -88,7 +95,7 @@ public class CrdtesterApplication implements CommandLineRunner {
 	}
 
 
-	private CustomResource getCustomResourceObject(CustomResourceDefinition crd) {
+	private CustomResourceImpl getCustomResourceObject(CustomResourceDefinition crd) {
 		return kubernetesClientService.createCrdClient(crd).withName(objectName).get();
 	}
 

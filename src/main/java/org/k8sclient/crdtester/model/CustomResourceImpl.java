@@ -36,12 +36,12 @@ public class CustomResourceImpl extends CustomResource {
 
   // Capture all other fields that Jackson do not match other members
   @JsonAnyGetter
-  public Map<String, Object> otherFields() {
+  public Map<String, Object> getUnknownFields() {
     return unknownFields;
   }
 
   @JsonAnySetter
-  public void setOtherField(String name, Object value) {
+  public void setUnknownFields(String name, Object value) {
     unknownFields.put(name, value);
   }
 

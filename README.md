@@ -1,6 +1,6 @@
 # CRD Tester
 
-This is a general-purpose tool for testing the use of a CRD. It checks for a CRD and then deploys a custom resource of that type and deletes it. If it hits an issue (e.g. due to a faulty resource file) then it reports failure. 
+This is a general-purpose tool for testing the use of a CRD. It checks for a CRD and then deploys a custom resource of that type and deletes it. It can optionally wait for the resource to match a spring expression condition before deleting (e.g. a ready status check). If it hits an issue (e.g. due to a faulty resource file) then it reports failure. 
 
 The tool is parameterised to allow for different CRDs. See [Using Custom Configuration](#using-custom-configuration)
 
@@ -17,6 +17,8 @@ To use the default configuration install the CRD from the initial steps in [this
 Clone this repository and run with `./mvnw spring-boot:run` (or `./mvnw.cmd spring-boot:run` on windows)
 
 If successful then near the end of the output you will see logging including `deleted mymodel` and `watch closed`. The tool should fail if unsuccessful.
+
+The custom resource contains a `status` and within that `state` which needs to be `Available` before deleting. The spring expression to match this is `unknownFields['status']['state'] eq 'Available'` - here `unknownFields` is a wrapper that allows custom resources to be handled in a general way without the check mechanism being tied to a particular CRD.
 
 ## Using Custom Configuration
 

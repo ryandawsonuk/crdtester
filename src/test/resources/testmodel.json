@@ -1,0 +1,68 @@
+{
+  "apiVersion": "machinelearning.seldon.io/v1alpha2",
+  "kind": "SeldonDeployment",
+  "metadata": {
+    "annotations": {
+      "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"machinelearning.seldon.io/v1alpha2\",\"kind\":\"SeldonDeployment\",\"metadata\":{\"name\":\"mymodel\",\"namespace\":\"seldon\",\"selfLink\":\"/apis/machinelearning.seldon.io/v1alpha2/namespaces/seldon/seldondeployments/mymodel\",\"uid\":\"5a24a38e-2888-11e9-bb16-08002770baea\",\"generation\":1,\"creationTimestamp\":\"2019-02-04T14:22:50Z\",\"labels\":{\"app\":\"seldon\"},\"clusterName\":\"\"},\"spec\":{\"name\":\"mymodel\",\"predictors\":[{\"name\":\"mymodel\",\"graph\":{\"name\":\"classifier\",\"type\":\"MODEL\",\"endpoint\":{\"type\":\"REST\"}},\"componentSpecs\":[{\"spec\":{\"containers\":[{\"name\":\"classifier\",\"image\":\"seldonio/mock_classifier:1.0\",\"resources\":{\"requests\":{\"memory\":\"1Mi\"}},\"imagePullPolicy\":\"IfNotPresent\"}],\"terminationGracePeriodSeconds\":1}}],\"replicas\":1,\"labels\":{\"version\":\"v1\"}}]},\"status\":{\"state\":\"Available\",\"predictorStatus\":[{\"name\":\"mymodel-mymodel-7cd068f\",\"replicas\":1,\"replicasAvailable\":1}]}}\n"
+    },
+    "clusterName": "",
+    "creationTimestamp": "2019-02-04T14:22:50Z",
+    "generation": 1,
+    "labels": {
+      "app": "seldon"
+    },
+    "name": "mymodel",
+    "namespace": "seldon",
+    "resourceVersion": "107057",
+    "selfLink": "/apis/machinelearning.seldon.io/v1alpha2/namespaces/seldon/seldondeployments/mymodel",
+    "uid": "5a24a38e-2888-11e9-bb16-08002770baea"
+  },
+  "spec": {
+    "name": "mymodel",
+    "predictors": [
+      {
+        "componentSpecs": [
+          {
+            "spec": {
+              "containers": [
+                {
+                  "image": "seldonio/mock_classifier:1.0",
+                  "imagePullPolicy": "IfNotPresent",
+                  "name": "classifier",
+                  "resources": {
+                    "requests": {
+                      "memory": "1Mi"
+                    }
+                  }
+                }
+              ],
+              "terminationGracePeriodSeconds": 1
+            }
+          }
+        ],
+        "graph": {
+          "endpoint": {
+            "type": "REST"
+          },
+          "name": "classifier",
+          "type": "MODEL"
+        },
+        "labels": {
+          "version": "v1"
+        },
+        "name": "mymodel",
+        "replicas": 1
+      }
+    ]
+  },
+  "status": {
+    "predictorStatus": [
+      {
+        "name": "mymodel-mymodel-7cd068f",
+        "replicas": 1,
+        "replicasAvailable": 1
+      }
+    ],
+    "state": "Available"
+  }
+}

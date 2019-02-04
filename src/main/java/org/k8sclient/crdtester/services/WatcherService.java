@@ -16,6 +16,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.expression.Expression;
+import org.springframework.expression.ExpressionParser;
+import org.springframework.expression.spel.SpelEvaluationException;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -32,11 +37,14 @@ public class WatcherService {
     @Value("${delete-resource}")
     private Boolean deleteResource;
 
-    @Value("${timeout:5000}")
+    @Value("${timeout:50000}")
     private long timeout;
 
     @Value("${kubernetes.namespace}")
     private String namespace;
+
+    @Value("${predelete-condition}")
+    private String predeleteCondition;
 
     public void waitForLatch(CountDownLatch deleteLatch, String message) {
         try {
@@ -45,6 +53,26 @@ public class WatcherService {
         }catch (KubernetesClientException | InterruptedException e) {
             logger.error(message, e);
         }
+    }
+
+    public boolean checkExpression(CustomResourceImpl deployedResource, String predeleteCondition){
+        String predicate = predeleteCondition;
+        StandardEvaluationContext context = new StandardEvaluationContext();
+
+        context.setRootObject(deployedResource);
+        ExpressionParser expressionParser = new SpelExpressionParser();
+
+        Expression expression = expressionParser.parseExpression(predicate);
+        try {
+            boolean result = expression.getValue(context,
+                                                   Boolean.class);
+            logger.info(result+" for "+predeleteCondition);
+            return result;
+
+        }catch (SpelEvaluationException ex){
+            logger.warn("Predelete expression failed "+predeleteCondition);
+        }
+        return false;
     }
 
 
@@ -66,7 +94,11 @@ public class WatcherService {
 
                         if(customResourceObjectName.equalsIgnoreCase(resource.getMetadata().getName())) {
 
-                            deleteService.delete(crd,deleteLatch,resource);
+                            if(predeleteCondition==null || predeleteCondition.equalsIgnoreCase("") || checkExpression(resource,predeleteCondition)) {
+                                deleteService.delete(crd,
+                                                     deleteLatch,
+                                                     resource);
+                            }
                         } else {
                             logger.info("Not deleting object " + resource.getMetadata().getName());
                         }
