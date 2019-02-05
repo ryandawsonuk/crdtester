@@ -1,5 +1,7 @@
 # CRD Tester
 
+[![Build Status Travis](https://travis-ci.org/ryandawsonuk/crdtester.svg?branch=master)](https://travis-ci.org/ryandawsonuk/crdtester)
+
 This is a general-purpose tool for testing the use of a CRD. It checks for a CRD and then deploys a custom resource of that type and deletes it. It can optionally wait for the resource to match a spring expression condition before deleting (e.g. a ready status check). If it hits an issue (e.g. due to a faulty resource file) then it reports failure. 
 
 The tool is parameterised to allow for different CRDs. See [Using Custom Configuration](#using-custom-configuration)
