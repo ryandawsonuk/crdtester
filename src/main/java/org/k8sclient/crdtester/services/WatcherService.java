@@ -12,6 +12,7 @@ import io.fabric8.kubernetes.client.dsl.Watchable;
 import org.k8sclient.crdtester.model.CustomResourceImpl;
 import org.k8sclient.crdtester.model.CustomResourceImplList;
 import org.k8sclient.crdtester.model.DoneableCustomResourceImpl;
+import org.k8sclient.crdtester.services.delete.DeleteService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
