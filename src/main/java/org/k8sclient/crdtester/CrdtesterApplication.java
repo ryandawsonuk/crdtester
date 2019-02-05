@@ -64,6 +64,8 @@ public class CrdtesterApplication implements CommandLineRunner {
 	@Override
 	public void run(String... strings) throws Exception {
 
+		System.out.println(errorOnExisting);
+
 		CustomResourceDefinition crd = getCRD();
 
 		//have commented on https://github.com/fabric8io/fabric8-maven-plugin/issues/1377 as this approach could be used to fix that

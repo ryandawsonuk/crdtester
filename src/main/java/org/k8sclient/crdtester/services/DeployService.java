@@ -3,6 +3,7 @@ package org.k8sclient.crdtester.services;
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
+import org.k8sclient.crdtester.config.CrdTesterProperties;
 import org.k8sclient.crdtester.model.CustomResourceImpl;
 import org.k8sclient.crdtester.model.CustomResourceImplList;
 import org.k8sclient.crdtester.model.DoneableCustomResourceImpl;
@@ -18,14 +19,8 @@ public class DeployService {
 
     private static final Logger logger = LoggerFactory.getLogger(DeployService.class);
 
-    @Value("${deploy.resource.location}")
-    private String resourceLocation;
-
-    @Value("${deploy.command}")
-    private String deployCommand;
-
-    @Value("${deploy.method}")
-    private String deployMethod;
+    @Autowired
+    private CrdTesterProperties crdTesterProperties;
 
     @Autowired
     private ResourceLoader resourceLoader;
@@ -37,18 +32,18 @@ public class DeployService {
     private KubernetesClientService kubernetesClientService;
 
     public void deploy(CustomResourceDefinition crd) throws Exception{
-        if(deployMethod.equalsIgnoreCase("command")){
+        if(crdTesterProperties.getDeployMethod().equalsIgnoreCase("command")){
             loadResourceUsingShellCommand();
         } else{
             loadResourceFromFileUsingClient(crd);
         }
     }
 
-    private CustomResourceImpl loadResourceFromFileUsingClient(CustomResourceDefinition crd) throws Exception {
+    public CustomResourceImpl loadResourceFromFileUsingClient(CustomResourceDefinition crd) throws Exception {
 
         NonNamespaceOperation<CustomResourceImpl, CustomResourceImplList, DoneableCustomResourceImpl, Resource<CustomResourceImpl, DoneableCustomResourceImpl>> crdClient = kubernetesClientService.createCrdClient(crd);
 
-        CustomResourceImpl resource = crdClient.load(resourceLoader.getResource(resourceLocation).getInputStream()).get();
+        CustomResourceImpl resource = crdClient.load(resourceLoader.getResource(crdTesterProperties.getResourceLocation()).getInputStream()).get();
 
         crdClient.createOrReplace(resource);
         logger.info("create or replace performed on "+resource);
@@ -56,13 +51,14 @@ public class DeployService {
         return resource;
     }
 
-    private void loadResourceUsingShellCommand() throws Exception{
+    public void loadResourceUsingShellCommand() throws Exception{
 
-        if(deployCommand==null || deployCommand.equalsIgnoreCase("")){
-            if(resourceLoader.getResource(resourceLocation).isFile()) {
-                deployCommand = "kubectl create -f " +resourceLoader.getResource(resourceLocation).getFile().getAbsoluteFile();
+        String deployCommand = crdTesterProperties.getDeployCommand();
+        if(crdTesterProperties.getDeployCommand()==null || crdTesterProperties.getDeployCommand().equalsIgnoreCase("")){
+            if(resourceLoader.getResource(crdTesterProperties.getResourceLocation()).isFile()) {
+                deployCommand = "kubectl create -f " +resourceLoader.getResource(crdTesterProperties.getResourceLocation()).getFile().getAbsoluteFile();
             } else{
-                deployCommand = "kubectl create -f " +resourceLoader.getResource(resourceLocation).getURL();
+                deployCommand = "kubectl create -f " +resourceLoader.getResource(crdTesterProperties.getResourceLocation()).getURL();
             }
         }
 
