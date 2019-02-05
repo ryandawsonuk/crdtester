@@ -44,7 +44,6 @@ public class ShellDeployServiceTests {
 
     @Test
     public void deploysWithShell() throws Exception {
-        when(crdTesterProperties.getDeployMethod()).thenReturn("command");
         when(resourceLoader.getResource(any())).thenReturn(resource);
         when(resource.isFile()).thenReturn(false);
         when(resource.getURL()).thenReturn(new URL("http://fakeurl"));
