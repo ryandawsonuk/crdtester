@@ -1,0 +1,8 @@
+language: java
+sudo: false
+jdk:
+  - openjdk8
+
+# Enable tests
+script:
+  - mvn test
