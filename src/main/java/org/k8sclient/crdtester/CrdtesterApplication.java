@@ -2,16 +2,14 @@ package org.k8sclient.crdtester;
 
 import java.util.concurrent.CountDownLatch;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition;
-import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watch;
 import io.fabric8.kubernetes.internal.KubernetesDeserializer;
 import org.k8sclient.crdtester.model.CustomResourceImpl;
-import org.k8sclient.crdtester.services.DeployService;
 import org.k8sclient.crdtester.services.KubernetesClientService;
 import org.k8sclient.crdtester.services.WatcherService;
+import org.k8sclient.crdtester.services.deploy.DeployService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
@@ -19,10 +17,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.expression.Expression;
-import org.springframework.expression.ExpressionParser;
-import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
 
 @SpringBootApplication
 public class CrdtesterApplication implements CommandLineRunner {

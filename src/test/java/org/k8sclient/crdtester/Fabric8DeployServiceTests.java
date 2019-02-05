@@ -13,9 +13,8 @@ import org.k8sclient.crdtester.config.CrdTesterProperties;
 import org.k8sclient.crdtester.model.CustomResourceImpl;
 import org.k8sclient.crdtester.model.CustomResourceImplList;
 import org.k8sclient.crdtester.model.DoneableCustomResourceImpl;
-import org.k8sclient.crdtester.services.DeployService;
 import org.k8sclient.crdtester.services.KubernetesClientService;
-import org.k8sclient.crdtester.services.ShellCommandService;
+import org.k8sclient.crdtester.services.deploy.Fabric8DeployService;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -29,11 +28,11 @@ import static org.mockito.MockitoAnnotations.initMocks;
 
 
 @RunWith(MockitoJUnitRunner.class)
-public class DeployServiceTests {
+public class Fabric8DeployServiceTests {
 
 	@InjectMocks
 	@Spy
-	private DeployService deployService;
+	private Fabric8DeployService deployService;
 
 	@Mock
 	private CrdTesterProperties crdTesterProperties;
@@ -46,9 +45,6 @@ public class DeployServiceTests {
 
 	@Mock
 	private InputStream inputStream;
-
-	@Mock
-	private ShellCommandService shellCommandService;
 
 	@Mock
 	private io.fabric8.kubernetes.client.dsl.Resource customResource;
@@ -66,7 +62,6 @@ public class DeployServiceTests {
 
 	@Test
 	public void deploysWithClient() throws Exception {
-		when(crdTesterProperties.getDeployMethod()).thenReturn("k8sclient");
 		when(resourceLoader.getResource(any())).thenReturn(resource);
 		when(resource.getInputStream()).thenReturn(inputStream);
 		when(kubernetesClientService.createCrdClient(any())).thenReturn(crdClient);
@@ -75,15 +70,6 @@ public class DeployServiceTests {
 		verify(kubernetesClientService).createCrdClient(any());
 	}
 
-	@Test
-	public void deploysWithShell() throws Exception {
-		when(crdTesterProperties.getDeployMethod()).thenReturn("command");
-		when(resourceLoader.getResource(any())).thenReturn(resource);
-		when(resource.isFile()).thenReturn(false);
-		when(resource.getURL()).thenReturn(new URL("http://fakeurl"));
-		deployService.deploy(new CustomResourceDefinition());
-		verify(shellCommandService).executeShellCommand(any());
-	}
 
 }
 
